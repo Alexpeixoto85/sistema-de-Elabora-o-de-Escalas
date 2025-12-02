@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -133,6 +134,16 @@
             transform: translateY(-2px);
         }
 
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7329e0;
+            transform: translateY(-2px);
+        }
+
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
@@ -156,6 +167,20 @@
             font-weight: 600;
             position: sticky;
             top: 0;
+        }
+
+        .header-editable {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .header-editable:hover::after {
+            content: "✏️";
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
         }
 
         tr:nth-child(even) {
@@ -258,22 +283,6 @@
             font-size: 0.9rem;
         }
 
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-
-        .status-active {
-            background-color: var(--success-color);
-        }
-
-        .status-inactive {
-            background-color: var(--gray-color);
-        }
-
         .weekend {
             background-color: #fff8e1;
         }
@@ -305,15 +314,23 @@
         .color-indicator {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 15px;
             font-size: 0.85rem;
             margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-indicator-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .color-box {
             width: 20px;
             height: 20px;
             border-radius: 4px;
+            border: 1px solid #ddd;
         }
 
         .color-weekend {
@@ -322,6 +339,26 @@
 
         .color-holiday {
             background-color: #ffebee;
+        }
+
+        .color-header {
+            background-color: var(--primary-color);
+        }
+
+        .edit-mode-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background-color: #e7f3ff;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 0.9rem;
+        }
+
+        .edit-mode-active {
+            background-color: #d4edda;
+            color: #155724;
         }
     </style>
 </head>
@@ -337,6 +374,9 @@
                 <div>
                     <button class="btn btn-primary" id="editScaleBtn">
                         <i class="fas fa-edit"></i> Editar Escala
+                    </button>
+                    <button class="btn btn-secondary" id="editHeaderBtn">
+                        <i class="fas fa-heading"></i> Editar Cabeçalhos
                     </button>
                     <button class="btn btn-success" id="addRowBtn">
                         <i class="fas fa-plus"></i> Adicionar Linha
@@ -364,24 +404,33 @@
                     <div class="color-box color-holiday"></div>
                     <span>Feriado</span>
                 </div>
+                <div class="color-indicator-item">
+                    <div class="color-box color-header"></div>
+                    <span>Cabeçalho editável</span>
+                </div>
+            </div>
+
+            <div id="editModeIndicator" class="edit-mode-indicator" style="display: none;">
+                <i class="fas fa-pencil-alt"></i>
+                <span>Modo de edição ativo</span>
             </div>
 
             <div class="table-container">
                 <table id="scaleTable">
-                    <thead>
+                    <thead id="tableHeader">
                         <tr>
-                            <th rowspan="2">DATA</th>
-                            <th rowspan="2">DIA</th>
-                            <th colspan="3">SHOPPING PÁTIO TELESIL</th>
-                            <th colspan="3">SHOPPING PÁTIO ENGENHARQ</th>
+                            <th rowspan="2" class="header-editable" data-field="data">DATA</th>
+                            <th rowspan="2" class="header-editable" data-field="dia">DIA</th>
+                            <th colspan="3" class="header-editable" data-field="shopping_telesil">SHOPPING PÁTIO TELESIL</th>
+                            <th colspan="3" class="header-editable" data-field="shopping_engenharq">SHOPPING PÁTIO ENGENHARQ</th>
                         </tr>
                         <tr>
-                            <th>9:00 ÀS 14:00</th>
-                            <th>MANHÃ</th>
-                            <th>TARDE</th>
-                            <th>CENTRAL GRAND RESERVA (9:00 ÀS 17:00)</th>
-                            <th>MANHÃ</th>
-                            <th>TARDE</th>
+                            <th class="header-editable" data-field="telesil_9_14">9:00 ÀS 14:00</th>
+                            <th class="header-editable" data-field="telesil_manha">MANHÃ</th>
+                            <th class="header-editable" data-field="telesil_tarde">TARDE</th>
+                            <th class="header-editable" data-field="engenharq_central">CENTRAL GRAND RESERVA (9:00 ÀS 17:00)</th>
+                            <th class="header-editable" data-field="engenharq_manha">MANHÃ</th>
+                            <th class="header-editable" data-field="engenharq_tarde">TARDE</th>
                         </tr>
                     </thead>
                     <tbody id="scaleBody">
@@ -397,19 +446,19 @@
         </div>
     </div>
 
-    <!-- Modal para edição -->
+    <!-- Modal para edição de células -->
     <div class="modal" id="editModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Editar Célula</h3>
+                <h3 id="modalTitle">Editar Célula</h3>
                 <button class="close-modal" id="closeModal">&times;</button>
             </div>
             <form id="editForm">
                 <div class="form-group">
-                    <label for="cellValue">Valor:</label>
-                    <input type="text" id="cellValue" class="form-control" placeholder="Digite o valor da célula">
+                    <label for="cellValue" id="cellLabel">Valor:</label>
+                    <input type="text" id="cellValue" class="form-control" placeholder="Digite o valor">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="cellTypeGroup">
                     <label for="cellType">Tipo de Conteúdo:</label>
                     <select id="cellType" class="form-control">
                         <option value="text">Texto</option>
@@ -421,6 +470,34 @@
                 <div class="form-group">
                     <button type="submit" class="btn btn-success" style="width: 100%;">
                         <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para edição de cabeçalhos -->
+    <div class="modal" id="editHeaderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Cabeçalho</h3>
+                <button class="close-modal" id="closeHeaderModal">&times;</button>
+            </div>
+            <form id="editHeaderForm">
+                <div class="form-group">
+                    <label for="headerValue">Texto do Cabeçalho:</label>
+                    <input type="text" id="headerValue" class="form-control" placeholder="Digite o texto do cabeçalho">
+                </div>
+                <div class="form-group">
+                    <label for="headerType">Tipo de Cabeçalho:</label>
+                    <select id="headerType" class="form-control">
+                        <option value="main">Cabeçalho Principal</option>
+                        <option value="sub">Subcabeçalho</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        <i class="fas fa-save"></i> Salvar Cabeçalho
                     </button>
                 </div>
             </form>
@@ -464,19 +541,32 @@
         // Referências aos elementos DOM
         const scaleBody = document.getElementById('scaleBody');
         const editModal = document.getElementById('editModal');
+        const editHeaderModal = document.getElementById('editHeaderModal');
         const closeModal = document.getElementById('closeModal');
+        const closeHeaderModal = document.getElementById('closeHeaderModal');
         const editForm = document.getElementById('editForm');
+        const editHeaderForm = document.getElementById('editHeaderForm');
         const cellValueInput = document.getElementById('cellValue');
+        const headerValueInput = document.getElementById('headerValue');
         const cellTypeSelect = document.getElementById('cellType');
+        const headerTypeSelect = document.getElementById('headerType');
+        const cellTypeGroup = document.getElementById('cellTypeGroup');
+        const modalTitle = document.getElementById('modalTitle');
+        const cellLabel = document.getElementById('cellLabel');
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const editScaleBtn = document.getElementById('editScaleBtn');
+        const editHeaderBtn = document.getElementById('editHeaderBtn');
         const addRowBtn = document.getElementById('addRowBtn');
         const resetBtn = document.getElementById('resetBtn');
         const printBtn = document.getElementById('printBtn');
+        const editModeIndicator = document.getElementById('editModeIndicator');
+        const tableHeader = document.getElementById('tableHeader');
 
         // Variáveis para controle da edição
         let currentCell = null;
+        let currentHeader = null;
         let isEditMode = false;
+        let isHeaderEditMode = false;
 
         // Inicializar a tabela
         function initTable() {
@@ -541,9 +631,14 @@
                 scaleBody.appendChild(tr);
             });
             
-            // Adicionar eventos de clique para edição
+            // Adicionar eventos de clique para edição de células
             document.querySelectorAll('.editable').forEach(cell => {
                 cell.addEventListener('click', handleCellClick);
+            });
+            
+            // Adicionar eventos de clique para edição de cabeçalhos
+            document.querySelectorAll('.header-editable').forEach(header => {
+                header.addEventListener('click', handleHeaderClick);
             });
         }
 
@@ -554,6 +649,11 @@
             currentCell = e.target;
             const field = currentCell.dataset.field;
             const index = currentCell.dataset.index;
+            
+            // Configurar modal para edição de célula
+            modalTitle.textContent = "Editar Célula";
+            cellLabel.textContent = "Valor:";
+            cellTypeGroup.style.display = "block";
             
             // Preencher o modal com os valores atuais
             cellValueInput.value = scaleData[index][field] || '';
@@ -575,78 +675,156 @@
             cellValueInput.focus();
         }
 
+        // Manipular clique em cabeçalho
+        function handleHeaderClick(e) {
+            if (!isHeaderEditMode) return;
+            
+            currentHeader = e.target;
+            
+            // Configurar modal para edição de cabeçalho
+            modalTitle.textContent = "Editar Cabeçalho";
+            cellLabel.textContent = "Texto do Cabeçalho:";
+            cellTypeGroup.style.display = "none";
+            
+            // Preencher o modal com o valor atual
+            cellValueInput.value = currentHeader.textContent;
+            
+            // Mostrar modal
+            editModal.style.display = 'flex';
+            cellValueInput.focus();
+        }
+
         // Salvar alterações do modal
         editForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            if (!currentCell) return;
-            
-            const newValue = cellValueInput.value;
-            const field = currentCell.dataset.field;
-            const index = currentCell.dataset.index;
-            
-            // Atualizar dados
-            scaleData[index][field] = newValue;
-            
-            // Atualizar célula na tabela
-            currentCell.textContent = newValue;
-            
-            // Aplicar estilos conforme tipo de conteúdo
-            currentCell.style.backgroundColor = '';
-            currentCell.style.fontWeight = '';
-            
-            if (newValue === 'X') {
-                currentCell.style.backgroundColor = '#ffebee';
-                currentCell.style.fontWeight = 'bold';
-            } else if (newValue && newValue.trim() !== '') {
-                currentCell.style.backgroundColor = '#e8f5e9';
+            if (currentHeader) {
+                // Atualizar cabeçalho
+                currentHeader.textContent = cellValueInput.value;
+                currentHeader = null;
+            } else if (currentCell) {
+                // Atualizar célula
+                const newValue = cellValueInput.value;
+                const field = currentCell.dataset.field;
+                const index = currentCell.dataset.index;
+                
+                // Atualizar dados
+                scaleData[index][field] = newValue;
+                
+                // Atualizar célula na tabela
+                currentCell.textContent = newValue;
+                
+                // Aplicar estilos conforme tipo de conteúdo
+                currentCell.style.backgroundColor = '';
+                currentCell.style.fontWeight = '';
+                
+                if (newValue === 'X') {
+                    currentCell.style.backgroundColor = '#ffebee';
+                    currentCell.style.fontWeight = 'bold';
+                } else if (newValue && newValue.trim() !== '') {
+                    currentCell.style.backgroundColor = '#e8f5e9';
+                }
+                
+                currentCell = null;
             }
             
             // Fechar modal
             editModal.style.display = 'none';
-            currentCell = null;
         });
 
-        // Fechar modal
-        closeModal.addEventListener('click', function() {
-            editModal.style.display = 'none';
-            currentCell = null;
-        });
-
-        // Fechar modal clicando fora
-        window.addEventListener('click', function(e) {
-            if (e.target === editModal) {
-                editModal.style.display = 'none';
-                currentCell = null;
-            }
-        });
-
-        // Alternar modo de edição
+        // Alternar modo de edição de escala
         editScaleBtn.addEventListener('click', function() {
             isEditMode = !isEditMode;
+            isHeaderEditMode = false;
             
+            updateEditModeUI();
+        });
+
+        // Alternar modo de edição de cabeçalho
+        editHeaderBtn.addEventListener('click', function() {
+            isHeaderEditMode = !isHeaderEditMode;
+            isEditMode = false;
+            
+            updateEditModeUI();
+        });
+
+        // Atualizar interface com base no modo de edição
+        function updateEditModeUI() {
             if (isEditMode) {
+                // Ativar modo edição de células
                 editScaleBtn.innerHTML = '<i class="fas fa-check"></i> Finalizar Edição';
                 editScaleBtn.classList.remove('btn-primary');
                 editScaleBtn.classList.add('btn-success');
                 
-                // Adicionar indicador visual
+                editHeaderBtn.innerHTML = '<i class="fas fa-heading"></i> Editar Cabeçalhos';
+                editHeaderBtn.classList.remove('btn-success');
+                editHeaderBtn.classList.add('btn-secondary');
+                
+                // Mostrar indicador
+                editModeIndicator.style.display = 'inline-flex';
+                editModeIndicator.innerHTML = '<i class="fas fa-pencil-alt"></i> <span>Modo de edição de células ativo</span>';
+                editModeIndicator.classList.add('edit-mode-active');
+                
+                // Ativar células para edição
                 document.querySelectorAll('.editable').forEach(cell => {
                     cell.style.cursor = 'pointer';
                     cell.style.border = '1px dashed #3a86ff';
                 });
-            } else {
+                
+                // Desativar cabeçalhos para edição
+                document.querySelectorAll('.header-editable').forEach(header => {
+                    header.style.cursor = 'default';
+                    header.style.border = 'none';
+                });
+                
+            } else if (isHeaderEditMode) {
+                // Ativar modo edição de cabeçalhos
+                editHeaderBtn.innerHTML = '<i class="fas fa-check"></i> Finalizar Edição';
+                editHeaderBtn.classList.remove('btn-secondary');
+                editHeaderBtn.classList.add('btn-success');
+                
                 editScaleBtn.innerHTML = '<i class="fas fa-edit"></i> Editar Escala';
                 editScaleBtn.classList.remove('btn-success');
                 editScaleBtn.classList.add('btn-primary');
                 
-                // Remover indicador visual
+                // Mostrar indicador
+                editModeIndicator.style.display = 'inline-flex';
+                editModeIndicator.innerHTML = '<i class="fas fa-heading"></i> <span>Modo de edição de cabeçalhos ativo</span>';
+                editModeIndicator.classList.add('edit-mode-active');
+                
+                // Ativar cabeçalhos para edição
+                document.querySelectorAll('.header-editable').forEach(header => {
+                    header.style.cursor = 'pointer';
+                    header.style.border = '1px dashed #8338ec';
+                });
+                
+                // Desativar células para edição
                 document.querySelectorAll('.editable').forEach(cell => {
                     cell.style.cursor = 'default';
                     cell.style.border = '1px solid #dee2e6';
                 });
+                
+            } else {
+                // Desativar todos os modos de edição
+                editScaleBtn.innerHTML = '<i class="fas fa-edit"></i> Editar Escala';
+                editScaleBtn.classList.remove('btn-success');
+                editScaleBtn.classList.add('btn-primary');
+                
+                editHeaderBtn.innerHTML = '<i class="fas fa-heading"></i> Editar Cabeçalhos';
+                editHeaderBtn.classList.remove('btn-success');
+                editHeaderBtn.classList.add('btn-secondary');
+                
+                // Ocultar indicador
+                editModeIndicator.style.display = 'none';
+                editModeIndicator.classList.remove('edit-mode-active');
+                
+                // Desativar todos para edição
+                document.querySelectorAll('.editable, .header-editable').forEach(element => {
+                    element.style.cursor = 'default';
+                    element.style.border = '';
+                });
             }
-        });
+        }
 
         // Adicionar nova linha
         addRowBtn.addEventListener('click', function() {
@@ -673,8 +851,8 @@
             scaleData.push(newRow);
             initTable();
             
-            // Ativar modo de edição
-            if (!isEditMode) {
+            // Ativar modo de edição se não estiver ativo
+            if (!isEditMode && !isHeaderEditMode) {
                 editScaleBtn.click();
             }
             
@@ -724,11 +902,28 @@
                     scaleData.push({...item});
                 });
                 
+                // Restaurar cabeçalhos originais
+                document.querySelectorAll('.header-editable').forEach(header => {
+                    const field = header.dataset.field;
+                    if (field === 'data') header.textContent = 'DATA';
+                    if (field === 'dia') header.textContent = 'DIA';
+                    if (field === 'shopping_telesil') header.textContent = 'SHOPPING PÁTIO TELESIL';
+                    if (field === 'shopping_engenharq') header.textContent = 'SHOPPING PÁTIO ENGENHARQ';
+                    if (field === 'telesil_9_14') header.textContent = '9:00 ÀS 14:00';
+                    if (field === 'telesil_manha') header.textContent = 'MANHÃ';
+                    if (field === 'telesil_tarde') header.textContent = 'TARDE';
+                    if (field === 'engenharq_central') header.textContent = 'CENTRAL GRAND RESERVA (9:00 ÀS 17:00)';
+                    if (field === 'engenharq_manha') header.textContent = 'MANHÃ';
+                    if (field === 'engenharq_tarde') header.textContent = 'TARDE';
+                });
+                
                 initTable();
                 
                 // Desativar modo de edição se estiver ativo
-                if (isEditMode) {
-                    editScaleBtn.click();
+                if (isEditMode || isHeaderEditMode) {
+                    isEditMode = false;
+                    isHeaderEditMode = false;
+                    updateEditModeUI();
                 }
             }
         });
@@ -756,6 +951,13 @@
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 
                 pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                
+                // Adicionar data de geração
+                const today = new Date();
+                const dateStr = today.toLocaleDateString('pt-BR');
+                pdf.setFontSize(10);
+                pdf.text(`Gerado em: ${dateStr}`, 10, 5);
+                
                 pdf.save('escala_trabalho.pdf');
                 
                 exportPdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar para PDF';
@@ -776,15 +978,47 @@
             window.print();
         });
 
+        // Fechar modais
+        closeModal.addEventListener('click', function() {
+            editModal.style.display = 'none';
+            currentCell = null;
+            currentHeader = null;
+        });
+
+        closeHeaderModal.addEventListener('click', function() {
+            editHeaderModal.style.display = 'none';
+            currentHeader = null;
+        });
+
+        // Fechar modal clicando fora
+        window.addEventListener('click', function(e) {
+            if (e.target === editModal) {
+                editModal.style.display = 'none';
+                currentCell = null;
+                currentHeader = null;
+            }
+            if (e.target === editHeaderModal) {
+                editHeaderModal.style.display = 'none';
+                currentHeader = null;
+            }
+        });
+
         // Inicializar o sistema
         document.addEventListener('DOMContentLoaded', function() {
             initTable();
             
             // Adicionar evento de teclado para fechar modal com ESC
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && editModal.style.display === 'flex') {
-                    editModal.style.display = 'none';
-                    currentCell = null;
+                if (e.key === 'Escape') {
+                    if (editModal.style.display === 'flex') {
+                        editModal.style.display = 'none';
+                        currentCell = null;
+                        currentHeader = null;
+                    }
+                    if (editHeaderModal.style.display === 'flex') {
+                        editHeaderModal.style.display = 'none';
+                        currentHeader = null;
+                    }
                 }
             });
         });
