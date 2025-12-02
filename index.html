@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Elaboração de Escalas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #8338ec;
+            --success-color: #06d6a0;
+            --warning-color: #ffd166;
+            --danger-color: #ef476f;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+            --border-radius: 10px;
+            --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--gray-color);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2a75ff;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #05c28f;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: var(--dark-color);
+        }
+
+        .btn-warning:hover {
+            background-color: #ffc745;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #ed325e;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        th, td {
+            padding: 15px 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e9ecef;
+        }
+
+        .editable {
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .editable:hover {
+            background-color: #e7f3ff !important;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal-header h3 {
+            color: var(--primary-color);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal:hover {
+            color: var(--danger-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+        }
+
+        .footer-info {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+        }
+
+        .status-inactive {
+            background-color: var(--gray-color);
+        }
+
+        .weekend {
+            background-color: #fff8e1;
+        }
+
+        .holiday {
+            background-color: #ffebee;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+        }
+
+        .color-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .color-weekend {
+            background-color: #fff8e1;
+        }
+
+        .color-holiday {
+            background-color: #ffebee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-calendar-alt"></i> Sistema de Elaboração de Escalas</h1>
+            <p>Gerencie e exporte escalas de trabalho de forma prática e eficiente</p>
+        </header>
+
+        <div class="card">
+            <div class="controls">
+                <div>
+                    <button class="btn btn-primary" id="editScaleBtn">
+                        <i class="fas fa-edit"></i> Editar Escala
+                    </button>
+                    <button class="btn btn-success" id="addRowBtn">
+                        <i class="fas fa-plus"></i> Adicionar Linha
+                    </button>
+                    <button class="btn btn-warning" id="resetBtn">
+                        <i class="fas fa-redo"></i> Redefinir
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-success" id="exportPdfBtn">
+                        <i class="fas fa-file-pdf"></i> Exportar para PDF
+                    </button>
+                    <button class="btn btn-primary" id="printBtn">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                </div>
+            </div>
+
+            <div class="color-indicator">
+                <div class="color-indicator-item">
+                    <div class="color-box color-weekend"></div>
+                    <span>Fim de semana</span>
+                </div>
+                <div class="color-indicator-item">
+                    <div class="color-box color-holiday"></div>
+                    <span>Feriado</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table id="scaleTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">DATA</th>
+                            <th rowspan="2">DIA</th>
+                            <th colspan="3">SHOPPING PÁTIO TELESIL</th>
+                            <th colspan="3">SHOPPING PÁTIO ENGENHARQ</th>
+                        </tr>
+                        <tr>
+                            <th>9:00 ÀS 14:00</th>
+                            <th>MANHÃ</th>
+                            <th>TARDE</th>
+                            <th>CENTRAL GRAND RESERVA (9:00 ÀS 17:00)</th>
+                            <th>MANHÃ</th>
+                            <th>TARDE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scaleBody">
+                        <!-- As linhas serão preenchidas pelo JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer-info">
+            <p><i class="fas fa-info-circle"></i> Clique em qualquer célula para editar. Use os botões acima para gerenciar a escala.</p>
+            <p>Sistema de Elaboração de Escalas &copy; 2023 - Para uso local</p>
+        </div>
+    </div>
+
+    <!-- Modal para edição -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Célula</h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="cellValue">Valor:</label>
+                    <input type="text" id="cellValue" class="form-control" placeholder="Digite o valor da célula">
+                </div>
+                <div class="form-group">
+                    <label for="cellType">Tipo de Conteúdo:</label>
+                    <select id="cellType" class="form-control">
+                        <option value="text">Texto</option>
+                        <option value="name">Nome de Funcionário</option>
+                        <option value="time">Horário</option>
+                        <option value="x">"X" (Indisponível)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Dados da escala baseados na imagem fornecida
+        const scaleData = [
+            { data: "1/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "2/dez", dia: "TER", telesil_9_14: "", telesil_manha: "NALEEN", telesil_tarde: "NALEEN", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "3/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "4/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "NALEEN", telesil_tarde: "NALEEN", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "5/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "6/dez", dia: "SÁB", telesil_9_14: "BRUNO E THIAGO", telesil_manha: "ISABELLE", telesil_tarde: "ISABELLE", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "7/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "8/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "MANHÃ JOÃO / TARDE ISABELLE", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "9/dez", dia: "TER", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "10/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "11/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "12/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "13/dez", dia: "SÁB", telesil_9_14: "NALEEN E JOÃO", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "14/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "15/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "16/dez", dia: "TER", telesil_9_14: "", telesil_manha: "SAMARA", telesil_tarde: "SAMARA", engenharq_central: "X", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "17/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "18/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "19/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "20/dez", dia: "SÁB", telesil_9_14: "FERÃO", telesil_manha: "THIAGO", telesil_tarde: "THIAGO", engenharq_central: "X", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "21/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "22/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "23/dez", dia: "TER", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "24/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "25/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "X", telesil_tarde: "X", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "26/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "27/dez", dia: "SÁB", telesil_9_14: "ISABELLE E SAMARA", telesil_manha: "JOÃO", telesil_tarde: "JOÃO", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "28/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+            { data: "29/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" }
+        ];
+
+        // Referências aos elementos DOM
+        const scaleBody = document.getElementById('scaleBody');
+        const editModal = document.getElementById('editModal');
+        const closeModal = document.getElementById('closeModal');
+        const editForm = document.getElementById('editForm');
+        const cellValueInput = document.getElementById('cellValue');
+        const cellTypeSelect = document.getElementById('cellType');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        const editScaleBtn = document.getElementById('editScaleBtn');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const printBtn = document.getElementById('printBtn');
+
+        // Variáveis para controle da edição
+        let currentCell = null;
+        let isEditMode = false;
+
+        // Inicializar a tabela
+        function initTable() {
+            scaleBody.innerHTML = '';
+            
+            scaleData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                
+                // Aplicar estilos para fins de semana
+                if (row.dia === 'SÁB' || row.dia === 'DOM') {
+                    tr.classList.add('weekend');
+                }
+                
+                // Aplicar estilos para feriados (exemplo: Natal)
+                if (row.data === '25/dez') {
+                    tr.classList.add('holiday');
+                }
+                
+                // Coluna DATA
+                const tdData = document.createElement('td');
+                tdData.textContent = row.data;
+                tdData.classList.add('editable');
+                tdData.dataset.field = 'data';
+                tdData.dataset.index = index;
+                tr.appendChild(tdData);
+                
+                // Coluna DIA
+                const tdDia = document.createElement('td');
+                tdDia.textContent = row.dia;
+                tdDia.classList.add('editable');
+                tdDia.dataset.field = 'dia';
+                tdDia.dataset.index = index;
+                tr.appendChild(tdDia);
+                
+                // Colunas SHOPPING PÁTIO TELESIL
+                const fields = [
+                    'telesil_9_14', 'telesil_manha', 'telesil_tarde',
+                    'engenharq_central', 'engenharq_manha', 'engenharq_tarde'
+                ];
+                
+                fields.forEach(field => {
+                    const td = document.createElement('td');
+                    td.textContent = row[field];
+                    td.classList.add('editable');
+                    td.dataset.field = field;
+                    td.dataset.index = index;
+                    
+                    // Destacar células com "X"
+                    if (row[field] === 'X') {
+                        td.style.backgroundColor = '#ffebee';
+                        td.style.fontWeight = 'bold';
+                    }
+                    
+                    // Destacar células com nomes
+                    if (row[field] && row[field] !== 'X' && row[field].trim() !== '') {
+                        td.style.backgroundColor = '#e8f5e9';
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                scaleBody.appendChild(tr);
+            });
+            
+            // Adicionar eventos de clique para edição
+            document.querySelectorAll('.editable').forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+        }
+
+        // Manipular clique em célula
+        function handleCellClick(e) {
+            if (!isEditMode) return;
+            
+            currentCell = e.target;
+            const field = currentCell.dataset.field;
+            const index = currentCell.dataset.index;
+            
+            // Preencher o modal com os valores atuais
+            cellValueInput.value = scaleData[index][field] || '';
+            
+            // Determinar tipo de conteúdo
+            const currentValue = scaleData[index][field];
+            if (currentValue === 'X') {
+                cellTypeSelect.value = 'x';
+            } else if (['NALEEN', 'ISABELLE', 'JOÃO', 'SAMARA', 'THIAGO', 'FERÃO', 'BRUNO'].some(name => currentValue && currentValue.includes(name))) {
+                cellTypeSelect.value = 'name';
+            } else if (currentValue && (currentValue.includes('MANHÃ') || currentValue.includes('TARDE') || currentValue.includes('ÁS'))) {
+                cellTypeSelect.value = 'time';
+            } else {
+                cellTypeSelect.value = 'text';
+            }
+            
+            // Mostrar modal
+            editModal.style.display = 'flex';
+            cellValueInput.focus();
+        }
+
+        // Salvar alterações do modal
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!currentCell) return;
+            
+            const newValue = cellValueInput.value;
+            const field = currentCell.dataset.field;
+            const index = currentCell.dataset.index;
+            
+            // Atualizar dados
+            scaleData[index][field] = newValue;
+            
+            // Atualizar célula na tabela
+            currentCell.textContent = newValue;
+            
+            // Aplicar estilos conforme tipo de conteúdo
+            currentCell.style.backgroundColor = '';
+            currentCell.style.fontWeight = '';
+            
+            if (newValue === 'X') {
+                currentCell.style.backgroundColor = '#ffebee';
+                currentCell.style.fontWeight = 'bold';
+            } else if (newValue && newValue.trim() !== '') {
+                currentCell.style.backgroundColor = '#e8f5e9';
+            }
+            
+            // Fechar modal
+            editModal.style.display = 'none';
+            currentCell = null;
+        });
+
+        // Fechar modal
+        closeModal.addEventListener('click', function() {
+            editModal.style.display = 'none';
+            currentCell = null;
+        });
+
+        // Fechar modal clicando fora
+        window.addEventListener('click', function(e) {
+            if (e.target === editModal) {
+                editModal.style.display = 'none';
+                currentCell = null;
+            }
+        });
+
+        // Alternar modo de edição
+        editScaleBtn.addEventListener('click', function() {
+            isEditMode = !isEditMode;
+            
+            if (isEditMode) {
+                editScaleBtn.innerHTML = '<i class="fas fa-check"></i> Finalizar Edição';
+                editScaleBtn.classList.remove('btn-primary');
+                editScaleBtn.classList.add('btn-success');
+                
+                // Adicionar indicador visual
+                document.querySelectorAll('.editable').forEach(cell => {
+                    cell.style.cursor = 'pointer';
+                    cell.style.border = '1px dashed #3a86ff';
+                });
+            } else {
+                editScaleBtn.innerHTML = '<i class="fas fa-edit"></i> Editar Escala';
+                editScaleBtn.classList.remove('btn-success');
+                editScaleBtn.classList.add('btn-primary');
+                
+                // Remover indicador visual
+                document.querySelectorAll('.editable').forEach(cell => {
+                    cell.style.cursor = 'default';
+                    cell.style.border = '1px solid #dee2e6';
+                });
+            }
+        });
+
+        // Adicionar nova linha
+        addRowBtn.addEventListener('click', function() {
+            const lastData = scaleData[scaleData.length - 1];
+            const lastDate = parseInt(lastData.data.split('/')[0]);
+            const lastMonth = lastData.data.split('/')[1];
+            
+            const newDate = (lastDate + 1) + '/' + lastMonth;
+            const days = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
+            const lastDayIndex = days.indexOf(lastData.dia);
+            const newDay = days[(lastDayIndex + 1) % 7];
+            
+            const newRow = {
+                data: newDate,
+                dia: newDay,
+                telesil_9_14: "",
+                telesil_manha: "",
+                telesil_tarde: "",
+                engenharq_central: "",
+                engenharq_manha: "",
+                engenharq_tarde: ""
+            };
+            
+            scaleData.push(newRow);
+            initTable();
+            
+            // Ativar modo de edição
+            if (!isEditMode) {
+                editScaleBtn.click();
+            }
+            
+            alert(`Nova linha adicionada: ${newDate} - ${newDay}`);
+        });
+
+        // Redefinir escala
+        resetBtn.addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja redefinir a escala para os valores originais? Todas as alterações serão perdidas.')) {
+                // Recarregar dados originais
+                scaleData.length = 0;
+                
+                // Recriar array com dados originais
+                const originalData = [
+                    { data: "1/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "2/dez", dia: "TER", telesil_9_14: "", telesil_manha: "NALEEN", telesil_tarde: "NALEEN", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "3/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "4/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "NALEEN", telesil_tarde: "NALEEN", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "5/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "6/dez", dia: "SÁB", telesil_9_14: "BRUNO E THIAGO", telesil_manha: "ISABELLE", telesil_tarde: "ISABELLE", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "7/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "8/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "MANHÃ JOÃO / TARDE ISABELLE", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "9/dez", dia: "TER", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "10/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "11/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "12/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "13/dez", dia: "SÁB", telesil_9_14: "NALEEN E JOÃO", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "14/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "15/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "16/dez", dia: "TER", telesil_9_14: "", telesil_manha: "SAMARA", telesil_tarde: "SAMARA", engenharq_central: "X", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "17/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "18/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "19/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "20/dez", dia: "SÁB", telesil_9_14: "FERÃO", telesil_manha: "THIAGO", telesil_tarde: "THIAGO", engenharq_central: "X", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "21/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "22/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "23/dez", dia: "TER", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "24/dez", dia: "QUA", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "25/dez", dia: "QUI", telesil_9_14: "", telesil_manha: "X", telesil_tarde: "X", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "26/dez", dia: "SEX", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "27/dez", dia: "SÁB", telesil_9_14: "ISABELLE E SAMARA", telesil_manha: "JOÃO", telesil_tarde: "JOÃO", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "28/dez", dia: "DOM", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" },
+                    { data: "29/dez", dia: "SEG", telesil_9_14: "", telesil_manha: "", telesil_tarde: "", engenharq_central: "", engenharq_manha: "", engenharq_tarde: "" }
+                ];
+                
+                originalData.forEach(item => {
+                    scaleData.push({...item});
+                });
+                
+                initTable();
+                
+                // Desativar modo de edição se estiver ativo
+                if (isEditMode) {
+                    editScaleBtn.click();
+                }
+            }
+        });
+
+        // Exportar para PDF
+        exportPdfBtn.addEventListener('click', function() {
+            exportPdfBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando PDF...';
+            exportPdfBtn.disabled = true;
+            
+            // Usar html2canvas para capturar a tabela
+            html2canvas(document.getElementById('scaleTable'), {
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const imgWidth = 280;
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+                pdf.save('escala_trabalho.pdf');
+                
+                exportPdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar para PDF';
+                exportPdfBtn.disabled = false;
+                
+                alert('PDF gerado com sucesso!');
+            }).catch(error => {
+                console.error('Erro ao gerar PDF:', error);
+                alert('Erro ao gerar PDF. Por favor, tente novamente.');
+                
+                exportPdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Exportar para PDF';
+                exportPdfBtn.disabled = false;
+            });
+        });
+
+        // Imprimir
+        printBtn.addEventListener('click', function() {
+            window.print();
+        });
+
+        // Inicializar o sistema
+        document.addEventListener('DOMContentLoaded', function() {
+            initTable();
+            
+            // Adicionar evento de teclado para fechar modal com ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && editModal.style.display === 'flex') {
+                    editModal.style.display = 'none';
+                    currentCell = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
